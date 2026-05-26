@@ -3,7 +3,7 @@ title: Markdown reference for Microsoft Learn
 description: Learn the Markdown features and syntax used in Microsoft Learn content.
 author: meganbradley
 ms.author: mbradley
-ms.date: 11/09/2021
+ms.date: 05/26/2026
 ms.topic: contributor-guide
 ms.service: learn
 ms.custom: external-contributor-guide
@@ -296,7 +296,7 @@ The `border` property is the recommended way to add a border. Don't create your 
 
 ### Creating an expandable image
 
-The optional `lightbox` property allows you to create an expanded image, as described in [Create an expandable screenshot (lightbox)](contribute-how-to-use-lightboxes.md). The value of `lightbox` is the path to the expanded image. 
+The optional `lightbox` property allows you to create an expanded image, as described in [Create an expandable screenshot (lightbox)](contribute-how-to-use-lightboxes.md). The value of `lightbox` is the path to the expanded image.
 
 -->
 
@@ -316,9 +316,9 @@ If `type="icon"`, `source` should be specified but `alt-text` shouldn't be.
 
 The `border` property  is `false` by default for icons. If your decorative image requires the standard image border, explicitly add `border="true"` to the `:::image:::` tag.
 
-<!-- No lightbox article in external guide, so commenting this out for now. 
+<!-- No lightbox article in external guide, so commenting this out for now.
 
-The `lightbox` property works the same for `icon` images as for standard `content` images. 
+The `lightbox` property works the same for `icon` images as for standard `content` images.
 
 -->
 
@@ -355,7 +355,71 @@ Here are requirements and considerations for include files:
 - Don't embed include files within other include files.
 - `/Includes` folders are excluded from build. Therefore, images stored in `/includes` folders and referenced in included files won't be displayed in published content. Store images in a `/media` folder outside the `/includes` folder.
 - As with regular articles, don't share media between include files. Use a separate file with a unique name for each include and article. Store the media file in the media folder that's associated with the include.
-- Don't use an include as the only content of an article.  Includes are meant to be supplemental to the content in the rest of the article.
+- Don't use an include as the only content of an article. Includes are meant to be supplemental to the content in the rest of the article.
+
+### Cross-repo includes
+
+The following example uses **Microsoft-OS** as the *source* repo and **Another-OS** as the *consuming* repo. The *consuming* repo is where you want to add your include.
+
+Use this quick view first, then follow the detailed steps in order.
+
+| Action | Consuming repo (Another-OS) | Source repo (Microsoft-OS) |
+| -- | -- | -- |
+| Register dependency | Add an entry under `dependent_repositories` in the `.openpublishing.publish.config.json`. | No change required for this step. |
+| Add include reference | Add your `[!INCLUDE ...]` with `~/../Microsoft-OS/...` in the target article. | No change required for this step. |
+| Resolve links and images inside included content | No change required for this step. | Replace relative links and image paths with absolute site-root URLs. |
+
+**Step 1:** Register the *source* repo in the *consuming* repo.
+
+You have to declare the dependency explicitly by adding an entry to the `dependent_repositories` array in your *consuming* repo's `.openpublishing.publish.config.json`. For example:
+
+```json
+"dependent_repositories": [
+  {
+    "path_to_root": "Microsoft-OS",
+    "url": "https://github.com/MicrosoftDocs/Microsoft-OS",
+    "branch": "main",
+    "branch_mapping": {}
+  }
+]
+```
+
+> [!NOTE]
+> Leave branch_mapping as an empty object `{}` for most cases. It's an advanced option for mapping specific branches between the consuming and source repos.
+
+The `path_to_root` value is the friendly name assigned in the include path (the *source* repo name).
+
+**Step 2:** Use the cross-repo syntax in your include.
+
+Relative paths like `../../Microsoft-OS/..` don't work. A cross-repo include path starts with a tilde (`~`). For example:
+
+> [!INCLUDE [\<title>]\(~/../Microsoft-OS/SourceDocs/\<filepath>.md)]
+
+**Step 3:** Fix relative paths inside the *source* repo.
+
+When the build processes the include file in the context of your repo, all relative paths inside it break, both images and hyperlinks because the build has no knowledge of the source file's original location.
+
+The fix for both is to replace relative paths with absolute site-root URLs:
+
+| Type | Before | After |
+| -- | -- | -- |
+| Image | ../media/\<image-path>/image.png | /Microsoft-OS/\<folder-path>/media/\<image-path>/image.png |
+| Link | my-amazing-article.md | /Microsoft-OS/\<folder-path>/my-amazing-article |
+
+Changes to *relative paths* must be committed to the *source* repo (Microsoft-OS) and not the *consuming* repo.
+
+Absolute site URLs for links drop the `.md` extension. To determine the correct base path, check the `breadcrumb_path` value in the *source* repo's **docfx.json**.
+
+#### Cross-repo path break down
+
+The following table explains how paths work with cross-repo includes given the previous example:
+
+| Segment | Meaning | Where used |
+| -- | -- | -- |
+| ~ | The root of your *consuming* doc set. Resolves to the `build_source_folder` value inside `docsets_to_publish` in the *consuming* repo's `.openpublishing.publish.config.json`. <br><br> For example, if `build_source_folder` is `"Another-OS"`, then `~` = `Another-OS/`. | *Consuming* repo: `.openpublishing.publish.config.json` → `docsets_to_publish` → `build_source_folder` |
+| ../ | Steps up one level from the doc set root to the *consuming* repo root. Always required for cross-repo includes so the build can exit your doc set and locate the dependent repo. | In your path (`../`) |
+| Microsoft-OS | The `path_to_root` friendly name registered for the *source* repo. The build uses this to locate the cloned source repo at build time. Must match the `path_to_root` value exactly. | *Consuming* repo: `.openpublishing.publish.config.json` → `dependent_repositories` → `path_to_root` |
+| SourceDocs/ | The file path inside the *source* repo, starting from the **repo root** (not the source doc set root). <br><br> If the source repo's `build_source_folder` is `"SourceDocs"`, that folder name must be included explicitly in your path. `build_source_folder` is almost always different from the repo name (`Microsoft-OS`) and the GitHub org name (`MicrosoftDocs`). | *Source* repo: `.openpublishing.publish.config.json` → `docsets_to_publish` → `build_source_folder` |
 
 ## Indentation
 
@@ -369,7 +433,7 @@ The following two examples show how indented paragraphs render based on their re
 1. This is a numbered list example (one space after the period before the letter T).
    This sentence is indented three spaces.
    This code block is indented three spaces.
-   
+
 - This is a bulleted list example (one space after the bullet before the letter T).
   This sentence is indented two spaces.
   > [!TIP]
