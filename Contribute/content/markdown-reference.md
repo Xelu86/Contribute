@@ -395,6 +395,9 @@ Relative paths like `../../Microsoft-OS/..` don't work. A cross-repo include pat
 
 > [!INCLUDE [\<title>]\(~/../Microsoft-OS/SourceDocs/\<filepath>.md)]
 
+> [!TIP]
+> If you want to use a whole article as an include, **omit** the title in your path.
+
 **Step 3:** Fix relative paths inside the *source* repo.
 
 When the build processes the include file in the context of your repo, all relative paths inside it break, both images and hyperlinks because the build has no knowledge of the source file's original location.
